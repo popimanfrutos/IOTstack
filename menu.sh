@@ -43,7 +43,7 @@ declare -A cont_array=(
 	[blynk_server]="blynk-server"
 	[nextcloud]="Next-Cloud"
 	[nginx]="NGINX by linuxserver"
-        [nginx-managet]="NGINX Manager Proxy"
+    [nginx-manager]="NGINX Manager Proxy"
 	[diyhue]="diyHue"
 	[homebridge]="Homebridge"
 	[python]="Python 3"
@@ -89,6 +89,7 @@ declare -a armhf_keys=(
 	"domoticz"
 	"dozzle"
 	"wireguard"
+	"nginx-manager"
 	# add yours here
 )
 sys_arch=$(uname -m)
