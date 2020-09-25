@@ -43,6 +43,7 @@ declare -A cont_array=(
 	[blynk_server]="blynk-server"
 	[nextcloud]="Next-Cloud"
 	[nginx]="NGINX by linuxserver"
+        [nginx-managet]="NGINX Manager Proxy"
 	[diyhue]="diyHue"
 	[homebridge]="Homebridge"
 	[python]="Python 3"
