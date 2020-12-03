@@ -9,6 +9,10 @@ CURRENT_BRANCH=${1:-$(git name-rev --name-only HEAD)}
 TMP_DOCKER_COMPOSE_YML=./.tmp/docker-compose.tmp.yml
 DOCKER_COMPOSE_YML=./docker-compose.yml
 DOCKER_COMPOSE_OVERRIDE_YML=./compose-override.yml
+BASE_DIR=./
+
+# Load params from file
+[ -f ./.params_menu ] && . ./.params_menu
 
 # Minimum Software Versions
 COMPOSE_VERSION="3.6"
@@ -107,14 +111,14 @@ timezones() {
 
 # this function creates the volumes, services and backup directories. It then assisgns the current user to the ACL to give full read write access
 docker_setfacl() {
-	[ -d ./services ] || mkdir ./services
-	[ -d ./volumes ] || mkdir ./volumes
-	[ -d ./backups ] || mkdir ./backups
-	[ -d ./tmp ] || mkdir ./tmp
+	[ -d $BASE_DIR/services ] || mkdir -p $BASE_DIR/services
+	[ -d $BASE_DIR/volumes ] || mkdir  -p $BASE_DIR/volumes
+	[ -d $BASE_DIR/backups ] || mkdir  -p $BASE_DIR/backups
+	[ -d $BASE_DIR/tmp ] || mkdir  -p $BASE_DIR/tmp
 
 	#give current user rwx on the volumes and backups
-	[ $(getfacl ./volumes | grep -c "default:user:$USER") -eq 0 ] && sudo setfacl -Rdm u:$USER:rwx ./volumes
-	[ $(getfacl ./backups | grep -c "default:user:$USER") -eq 0 ] && sudo setfacl -Rdm u:$USER:rwx ./backups
+	[ $(getfacl  $BASE_DIR/volumes | grep -c "default:user:$USER") -eq 0 ] && sudo setfacl -Rdm u:$USER:rwx  $BASE_DIR/volumes
+	[ $(getfacl  $BASE_DIR/backups | grep -c "default:user:$USER") -eq 0 ] && sudo setfacl -Rdm u:$USER:rwx  $BASE_DIR/backups
 }
 
 #future function add password in build phase
@@ -257,11 +261,11 @@ function do_python3_pip() {
 #function copies the template yml file to the local service folder and appends to the docker-compose.yml file
 function yml_builder() {
 
-	service="services/$1/service.yml"
+	service="$BASE_DIR/services/$1/service.yml"
 
-	[ -d ./services/ ] || mkdir ./services/
+	[ -d $BASE_DIR/services/ ] || mkdir -p $BASE_DIR/services/
 
-	if [ -d ./services/$1 ]; then
+	if [ -d $BASE_DIR/services/$1 ]; then
 		#directory already exists prompt user to overwrite
 		sevice_overwrite=$(whiptail --radiolist --title "Overwrite Option" --notags \
 			"$1 service directory has been detected, use [SPACEBAR] to select you overwrite option" 20 78 12 \
@@ -274,11 +278,11 @@ function yml_builder() {
 
 		"full")
 			echo "...pulled full $1 from template"
-			rsync -a -q .templates/$1/ services/$1/ --exclude 'build.sh'
+			rsync -a -q .templates/$1/ $BASE_DIR/services/$1/ --exclude 'build.sh'
 			;;
 		"env")
 			echo "...pulled $1 excluding env file"
-			rsync -a -q .templates/$1/ services/$1/ --exclude 'build.sh' --exclude '$1.env' --exclude '*.conf'
+			rsync -a -q .templates/$1/ $BASE_DIR/services/$1/ --exclude 'build.sh' --exclude '$1.env' --exclude '*.conf'
 			;;
 		"none")
 			echo "...$1 service not overwritten"
@@ -287,25 +291,29 @@ function yml_builder() {
 		esac
 
 	else
-		mkdir ./services/$1
+		mkdir -p  $BASE_DIR/services/$1
 		echo "...pulled full $1 from template"
-		rsync -a -q .templates/$1/ services/$1/ --exclude 'build.sh'
+		rsync -a -q .templates/$1/  $BASE_DIR/services/$1/ --exclude 'build.sh'
 	fi
 
 
 	#if an env file exists check for timezone
-	[ -f "./services/$1/$1.env" ] && timezones ./services/$1/$1.env
+	[ -f "$BASE_DIR/services/$1/$1.env" ] && timezones  $BASE_DIR/services/$1/$1.env
 
 	# if a volumes.yml exists, append to overall volumes.yml file
-	[ -f "./services/$1/volumes.yml" ] && cat "./services/$1/volumes.yml" >> docker-volumes.yml
+	[ -f "$BASE_DIR/services/$1/volumes.yml" ] && cat " $BASE_DIR/services/$1/volumes.yml" >> docker-volumes.yml
 
 	#add new line then append service
 	echo "" >> $TMP_DOCKER_COMPOSE_YML
+	#fixing volumes
+	sed -i "s|\.\/volumes|$BASE_DIR\/volumes|g" $service
+	echo "s|\.\/volumes|$BASE_DIR\/volumes|g"	
+	reas -p "espera ..."
 	cat $service >> $TMP_DOCKER_COMPOSE_YML
 
 	#test for post build
 	if [ -f ./.templates/$1/build.sh ]; then
-		chmod +x ./.templates/$1/build.sh
+		chmod +x ./.templates/$1/build.sh  $BASE_DIR
 		bash ./.templates/$1/build.sh
 	fi
 
@@ -313,11 +321,11 @@ function yml_builder() {
 	if [ -f ./.templates/$1/directoryfix.sh ]; then
 		chmod +x ./.templates/$1/directoryfix.sh
 		echo "...Running directoryfix.sh on $1"
-		bash ./.templates/$1/directoryfix.sh
+		bash ./.templates/$1/directoryfix.sh  $BASE_DIR
 	fi
 
 	#make sure terminal.sh is executable
-	[ -f ./services/$1/terminal.sh ] && chmod +x ./services/$1/terminal.sh
+	[ -f  $BASE_DIR/services/$1/terminal.sh ] && chmod +x  $BASE_DIR/services/$1/terminal.sh
 
 }
 
@@ -371,6 +379,7 @@ mainmenu_selection=$(whiptail --title "Main Menu" --menu --notags \
 	"commands" "Docker commands" \
 	"backup" "Backup options" \
 	"misc" "Miscellaneous commands" \
+	"configure" "Base directory configuration" \
 	"update" "Update IOTstack" \
 	3>&1 1>&2 2>&3)
 
@@ -439,7 +448,7 @@ case $mainmenu_selection in
 		echo "services:" >> $TMP_DOCKER_COMPOSE_YML
 
 		#set the ACL for the stack
-		#docker_setfacl
+		docker_setfacl
 
 		# store last sellection
 		[ -f ./services/selection.txt ] && rm ./services/selection.txt
@@ -642,6 +651,11 @@ case $mainmenu_selection in
 		bash ./.native/rpieasy.sh
 		;;
 	esac
+	;;
+"configure")
+
+	BASE_DIR=$(whiptail --inputbox "Fullpath to storage volumes and configuration" 8 39 $BASE_DIR --title "Configura dir" 3>&1 1>&2 2>&3)
+    echo "BASE_DIR=$BASE_DIR" > ./.params_menu
 	;;
 *) ;;
 
