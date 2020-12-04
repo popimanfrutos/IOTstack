@@ -279,6 +279,8 @@ function yml_builder() {
 		"full")
 			echo "...pulled full $1 from template"
 			rsync -a -q .templates/$1/ $BASE_DIR/services/$1/ --exclude 'build.sh'
+			get_details $1
+			[ -f .templates/$1/messge.txt] && $(whiptail --title "Opening file" --yesno "$(cat $file)" --scrolltext 78 78 3>&1 1>&2 2>&3)
 			;;
 		"env")
 			echo "...pulled $1 excluding env file"
@@ -294,6 +296,7 @@ function yml_builder() {
 		mkdir -p  $BASE_DIR/services/$1
 		echo "...pulled full $1 from template"
 		rsync -a -q .templates/$1/  $BASE_DIR/services/$1/ --exclude 'build.sh'
+		get_details $1
 	fi
 
 
@@ -308,7 +311,6 @@ function yml_builder() {
 	#fixing volumes
 	sed -i "s|\.\/volumes|$BASE_DIR\/volumes|g" $service
 	echo "s|\.\/volumes|$BASE_DIR\/volumes|g"	
-	reas -p "espera ..."
 	cat $service >> $TMP_DOCKER_COMPOSE_YML
 
 	#test for post build
@@ -327,6 +329,60 @@ function yml_builder() {
 	#make sure terminal.sh is executable
 	[ -f  $BASE_DIR/services/$1/terminal.sh ] && chmod +x  $BASE_DIR/services/$1/terminal.sh
 
+}
+
+
+# Get Ports an pass 
+# parameter : name of service
+function get_details(){
+	service_process=$1
+	servicefile="$BASE_DIR/services/$service_process/service.yml"
+	sed_string=()
+
+	local_status=0
+
+	while IFS= read -r line
+	do
+		if [ $local_status = 1 ]; then
+			if [[ $line == *"- "* ]]; then
+				outport=$( echo $line |cut -d'"' -f2 |cut -d":" -f1 )
+				inport=$( echo $line |cut -d':' -f2 |cut -d'"' -f1 )
+				replaceport=$(whiptail --inputbox "Map port $inport to external port" 8 39 $outport --title "Ports of service $service_process" 3>&1 1>&2 2>&3)
+				exitstatus=$?
+				if [ $exitstatus = 0 ]; then
+					sed_string+=("s/$outport:$inport/$replaceport:$inport/g")
+				fi        
+			else
+				local_status=0
+			fi
+		fi
+		if [ $local_status = 2 ]; then
+			if [[ $line == *"- "* ]]; then
+				nameofvalue=$( echo $line |cut -d'-' -f2 |cut -d"=" -f1|tr -d [:blank:] )
+				value=$( echo $line |cut -d'=' -f2 |cut -d'"' -f1 )
+				replacevalue=$(whiptail --inputbox "Set value for $nameofvalue" 8 39 $value --title "Value for service $service_process" 3>&1 1>&2 2>&3)
+				exitstatus=$?
+				if [ $exitstatus = 0 ]; then
+					sed_string+=("s/$nameofvalue=$value/$nameofvalue=$replacevalue/g")
+				fi        
+			else
+				local_status=0
+			fi
+		fi
+
+		if [ $local_status = 0 ]; then
+			if [[ $line == *"ports:"* ]]; then
+				local_status=1
+			fi
+			if [[ $line == *"environment:"* ]]; then
+				local_status=2
+			fi
+		fi
+	done < "$servicefile"
+
+	for rep in ${sed_string[@]} ; do
+		sed -i "$rep" $servicefile 
+		done
 }
 
 #---------------------------------------------------------------------------------------------------
@@ -370,295 +426,307 @@ fi
 #---------------------------------------------------------------------------------------------------
 # Menu system starts here
 # Display main menu
-mainmenu_selection=$(whiptail --title "Main Menu" --menu --notags \
-	"" 20 78 12 -- \
-	"install" "Install Docker" \
-	"build" "Build Stack" \
-	"hassio" "Install Home Assistant (Requires Docker)" \
-	"native" "Native Installs" \
-	"commands" "Docker commands" \
-	"backup" "Backup options" \
-	"misc" "Miscellaneous commands" \
-	"configure" "Base directory configuration" \
-	"update" "Update IOTstack" \
-	3>&1 1>&2 2>&3)
+do_loop=1
+while [ $do_loop = 1 ] ; do
+	mainmenu_selection=$(whiptail --title "Main Menu" --menu --notags \
+		"" 20 78 12 -- \
+		"install" "Install Docker" \
+		"build" "Build Stack" \
+		"hassio" "Install Home Assistant (Requires Docker)" \
+		"native" "Native Installs" \
+		"commands" "Docker commands" \
+		"backup" "Backup options" \
+		"misc" "Miscellaneous commands" \
+		"configure" "Base directory configuration" \
+		"update" "Update IOTstack" \
+		"exit" "Exit" \
+		3>&1 1>&2 2>&3)
 
-case $mainmenu_selection in
-#MAINMENU Install docker  ------------------------------------------------------------
-"install")
-	#sudo apt update && sudo apt upgrade -y ;;
+	exitstatus=$?
+	if [ $exitstatus = 0 ]; then
+	case $mainmenu_selection in
+	#MAINMENU Install docker  ------------------------------------------------------------
+	"install")
+		#sudo apt update && sudo apt upgrade -y ;;
 
-	if command_exists docker; then
-		echo "docker already installed"
-	else
-		echo "Install Docker"
-		curl -fsSL https://get.docker.com | sh
-		sudo usermod -aG docker $USER
-	fi
-
-	if command_exists docker-compose; then
-		echo "docker-compose already installed"
-	else
-		echo "Install docker-compose"
-		sudo apt install -y docker-compose
-	fi
-
-	if (whiptail --title "Restart Required" --yesno "It is recommended that you restart your device now. Select yes to do so now" 20 78); then
-		sudo reboot
-	fi
-	;;
-	#MAINMENU Build stack ------------------------------------------------------------
-"build")
-
-	title=$'Container Selection'
-	message=$'Use the [SPACEBAR] to select which containers you would like to install'
-	entry_options=()
-
-	#check architecture and display appropriate menu
-	if [ $(echo "$sys_arch" | grep -c "arm") ]; then
-		keylist=("${armhf_keys[@]}")
-	else
-		echo "your architecture is not supported yet"
-		exit
-	fi
-
-	#loop through the array of descriptions
-	for index in "${keylist[@]}"; do
-		entry_options+=("$index")
-		entry_options+=("${cont_array[$index]}")
-
-		#check selection
-		if [ -f ./services/selection.txt ]; then
-			[ $(grep "$index" ./services/selection.txt) ] && entry_options+=("ON") || entry_options+=("OFF")
+		if command_exists docker; then
+			echo "docker already installed"
 		else
-			entry_options+=("OFF")
+			echo "Install Docker"
+			curl -fsSL https://get.docker.com | sh
+			sudo usermod -aG docker $USER
 		fi
-	done
 
-	container_selection=$(whiptail --title "$title" --notags --separate-output --checklist \
-		"$message" 20 78 12 -- "${entry_options[@]}" 3>&1 1>&2 2>&3)
+		if command_exists docker-compose; then
+			echo "docker-compose already installed"
+		else
+			echo "Install docker-compose"
+			sudo apt install -y docker-compose
+		fi
 
-	mapfile -t containers <<<"$container_selection"
+		if (whiptail --title "Restart Required" --yesno "It is recommended that you restart your device now. Select yes to do so now" 20 78); then
+			sudo reboot
+		fi
+		;;
+		#MAINMENU Build stack ------------------------------------------------------------
+	"build")
 
-	#if no container is selected then dont overwrite the docker-compose.yml file
-	if [ -n "$container_selection" ]; then
-		touch $TMP_DOCKER_COMPOSE_YML
+		title=$'Container Selection'
+		message=$'Use the [SPACEBAR] to select which containers you would like to install'
+		entry_options=()
 
-		echo "version: '$COMPOSE_VERSION'" > $TMP_DOCKER_COMPOSE_YML
-		echo "services:" >> $TMP_DOCKER_COMPOSE_YML
+		#check architecture and display appropriate menu
+		if [ $(echo "$sys_arch" | grep -c "arm") ]; then
+			keylist=("${armhf_keys[@]}")
+		else
+			echo "your architecture is not supported yet"
+			exit
+		fi
 
-		#set the ACL for the stack
-		docker_setfacl
+		#loop through the array of descriptions
+		for index in "${keylist[@]}"; do
+			entry_options+=("$index")
+			entry_options+=("${cont_array[$index]}")
 
-		# store last sellection
-		[ -f ./services/selection.txt ] && rm ./services/selection.txt
-		#first run service directory wont exist
-		[ -d ./services ] || mkdir services
-		touch ./services/selection.txt
-		#Run yml_builder of all selected containers
-		for container in "${containers[@]}"; do
-			echo "Adding $container container"
-			yml_builder "$container"
-			echo "$container" >>./services/selection.txt
+			#check selection
+			if [ -f ./services/selection.txt ]; then
+				[ $(grep "$index" ./services/selection.txt) ] && entry_options+=("ON") || entry_options+=("OFF")
+			else
+				entry_options+=("OFF")
+			fi
 		done
 
-		if [ -f "$DOCKER_COMPOSE_OVERRIDE_YML" ]; then
-			do_python3_pip
-			
-			if [ "$PYTHON_VERSION_GOOD" == "true" ] && [ "$PYYAML_VERSION_GOOD" == "true" ]; then
-				echo "merging docker overrides with docker-compose.yml"
-				python3 ./scripts/yaml_merge.py $TMP_DOCKER_COMPOSE_YML  $DOCKER_COMPOSE_OVERRIDE_YML $DOCKER_COMPOSE_YML
+		container_selection=$(whiptail --title "$title" --notags --separate-output --checklist \
+			"$message" 20 78 12 -- "${entry_options[@]}" 3>&1 1>&2 2>&3)
+
+		mapfile -t containers <<<"$container_selection"
+
+		#if no container is selected then dont overwrite the docker-compose.yml file
+		if [ -n "$container_selection" ]; then
+			touch $TMP_DOCKER_COMPOSE_YML
+
+			echo "version: '$COMPOSE_VERSION'" > $TMP_DOCKER_COMPOSE_YML
+			echo "services:" >> $TMP_DOCKER_COMPOSE_YML
+
+			#set the ACL for the stack
+			docker_setfacl
+
+			# store last sellection
+			[ -f ./services/selection.txt ] && rm ./services/selection.txt
+			#first run service directory wont exist
+			[ -d ./services ] || mkdir services
+			touch ./services/selection.txt
+			#Run yml_builder of all selected containers
+			for container in "${containers[@]}"; do
+				echo "Adding $container container"
+				yml_builder "$container"
+				echo "$container" >>./services/selection.txt
+			done
+
+			if [ -f "$DOCKER_COMPOSE_OVERRIDE_YML" ]; then
+				do_python3_pip
+				
+				if [ "$PYTHON_VERSION_GOOD" == "true" ] && [ "$PYYAML_VERSION_GOOD" == "true" ]; then
+					echo "merging docker overrides with docker-compose.yml"
+					python3 ./scripts/yaml_merge.py $TMP_DOCKER_COMPOSE_YML  $DOCKER_COMPOSE_OVERRIDE_YML $DOCKER_COMPOSE_YML
+				else
+					echo "incorrect python or dependency versions, aborting override and using docker-compose.yml"
+					cp $TMP_DOCKER_COMPOSE_YML $DOCKER_COMPOSE_YML
+				fi
 			else
-				echo "incorrect python or dependency versions, aborting override and using docker-compose.yml"
+				echo "no override found, using docker-compose.yml"
 				cp $TMP_DOCKER_COMPOSE_YML $DOCKER_COMPOSE_YML
 			fi
+
+			echo "docker-compose successfully created"
+			echo "run 'docker-compose up -d' to start the stack"
 		else
-			echo "no override found, using docker-compose.yml"
-			cp $TMP_DOCKER_COMPOSE_YML $DOCKER_COMPOSE_YML
-		fi
 
-		echo "docker-compose successfully created"
-		echo "run 'docker-compose up -d' to start the stack"
-	else
+			echo "Build cancelled"
 
-		echo "Build cancelled"
-
-	fi
-	;;
-	#MAINMENU Docker commands -----------------------------------------------------------
-"commands")
-
-	docker_selection=$(
-		whiptail --title "Docker commands" --menu --notags \
-			"Shortcut to common docker commands" 20 78 12 -- \
-			"aliases" "Add iotstack_up and iotstack_down aliases" \
-			"start" "Start stack" \
-			"restart" "Restart stack" \
-			"stop" "Stop stack" \
-			"stop_all" "Stop any running container regardless of stack" \
-			"pull" "Update all containers" \
-			"prune_volumes" "Delete all stopped containers and docker volumes" \
-			"prune_images" "Delete all images not associated with container" \
-			3>&1 1>&2 2>&3
-	)
-
-	case $docker_selection in
-	"start") ./scripts/start.sh ;;
-	"stop") ./scripts/stop.sh ;;
-	"stop_all") ./scripts/stop-all.sh ;;
-	"restart") ./scripts/restart.sh ;;
-	"pull") ./scripts/update.sh ;;
-	"prune_volumes") ./scripts/prune-volumes.sh ;;
-	"prune_images") ./scripts/prune-images.sh ;;
-	"aliases")
-		touch ~/.bash_aliases
-		if [ $(grep -c 'IOTstack' ~/.bash_aliases) -eq 0 ]; then
-			echo ". ~/IOTstack/.bash_aliases" >>~/.bash_aliases
-			echo "added aliases"
-		else
-			echo "aliases already added"
-		fi
-		source ~/.bashrc
-		echo "aliases will be available after a reboot"
-		;;
-	esac
-	;;
-	#Backup menu ---------------------------------------------------------------------
-"backup")
-	backup_sellection=$(whiptail --title "Backup Options" --menu --notags \
-		"Select backup option" 20 78 12 -- \
-		"dropbox-uploader" "Dropbox-Uploader" \
-		"rclone" "google drive via rclone" \
-		3>&1 1>&2 2>&3)
-
-	case $backup_sellection in
-
-	"dropbox-uploader")
-		if [ ! -d ~/Dropbox-Uploader ]; then
-			git clone https://github.com/andreafabrizi/Dropbox-Uploader.git ~/Dropbox-Uploader
-			chmod +x ~/Dropbox-Uploader/dropbox_uploader.sh
-			pushd ~/Dropbox-Uploader && ./dropbox_uploader.sh
-			popd
-		else
-			echo "Dropbox uploader already installed"
-		fi
-
-		#add enable file for Dropbox-Uploader
-		[ -d ~/IOTstack/backups ] || sudo mkdir -p ~/IOTstack/backups/
-		sudo touch ~/IOTstack/backups/dropbox
-		;;
-	"rclone")
-		sudo apt install -y rclone
-		echo "Please run 'rclone config' to configure the rclone google drive backup"
-
-		#add enable file for rclone
-		[ -d ~/IOTstack/backups ] || sudo mkdir -p ~/IOTstack/backups/
-		sudo touch ~/IOTstack/backups/rclone
-		;;
-	esac
-	;;
-	#MAINMENU Misc commands------------------------------------------------------------
-"misc")
-	misc_sellection=$(
-		whiptail --title "Miscellaneous Commands" --menu --notags \
-			"Some helpful commands" 20 78 12 -- \
-			"swap" "Disable swap by uninstalling swapfile" \
-			"swappiness" "Disable swap by setting swappiness to 0" \
-			"log2ram" "install log2ram to decrease load on sd card, moves /var/log into ram" \
-			3>&1 1>&2 2>&3
-	)
-
-	case $misc_sellection in
-	"swap")
-		sudo dphys-swapfile swapoff
-		sudo dphys-swapfile uninstall
-		sudo update-rc.d dphys-swapfile remove
-		sudo systemctl disable dphys-swapfile
-		#sudo apt-get remove dphys-swapfile
-		echo "Swap file has been removed"
-		;;
-	"swappiness")
-		if [ $(grep -c swappiness /etc/sysctl.conf) -eq 0 ]; then
-			echo "vm.swappiness=0" | sudo tee -a /etc/sysctl.conf
-			echo "updated /etc/sysctl.conf with vm.swappiness=0"
-		else
-			sudo sed -i "/vm.swappiness/c\vm.swappiness=0" /etc/sysctl.conf
-			echo "vm.swappiness found in /etc/sysctl.conf update to 0"
-		fi
-
-		sudo sysctl vm.swappiness=0
-		echo "set swappiness to 0 for immediate effect"
-		;;
-	"log2ram")
-		if [ ! -d ~/log2ram ]; then
-			git clone https://github.com/azlux/log2ram.git ~/log2ram
-			chmod +x ~/log2ram/install.sh
-			pushd ~/log2ram && sudo ./install.sh
-			popd
-		else
-			echo "log2ram already installed"
 		fi
 		;;
-	esac
-	;;
+		#MAINMENU Docker commands -----------------------------------------------------------
+	"commands")
 
-"hassio")
-	echo "install requirements for hass.io"
-	sudo apt install -y bash jq curl avahi-daemon dbus
-	hassio_machine=$(whiptail --title "Machine type" --menu \
-		"Please select you device type" 20 78 12 -- \
-		"raspberrypi4" " " \
-		"raspberrypi3" " " \
-		"raspberrypi2" " " \
-		"raspberrypi4-64" " " \
-		"raspberrypi3-64" " " \
-		"qemux86" " " \
-		"qemux86-64" " " \
-		"qemuarm" " " \
-		"qemuarm-64" " " \
-		"orangepi-prime" " " \
-		"odroid-xu" " " \
-		"odroid-c2" " " \
-		"intel-nuc" " " \
-		"tinker" " " \
-		3>&1 1>&2 2>&3)
-	if [ -n "$hassio_machine" ]; then
-		curl -sL https://raw.githubusercontent.com/home-assistant/supervised-installer/master/installer.sh | sudo bash -s -- -m $hassio_machine
-	else
-		echo "no selection"
+		docker_selection=$(
+			whiptail --title "Docker commands" --menu --notags \
+				"Shortcut to common docker commands" 20 78 12 -- \
+				"aliases" "Add iotstack_up and iotstack_down aliases" \
+				"start" "Start stack" \
+				"restart" "Restart stack" \
+				"stop" "Stop stack" \
+				"stop_all" "Stop any running container regardless of stack" \
+				"pull" "Update all containers" \
+				"prune_volumes" "Delete all stopped containers and docker volumes" \
+				"prune_images" "Delete all images not associated with container" \
+				3>&1 1>&2 2>&3
+		)
+
+		case $docker_selection in
+		"start") ./scripts/start.sh ;;
+		"stop") ./scripts/stop.sh ;;
+		"stop_all") ./scripts/stop-all.sh ;;
+		"restart") ./scripts/restart.sh ;;
+		"pull") ./scripts/update.sh ;;
+		"prune_volumes") ./scripts/prune-volumes.sh ;;
+		"prune_images") ./scripts/prune-images.sh ;;
+		"aliases")
+			touch ~/.bash_aliases
+			if [ $(grep -c 'IOTstack' ~/.bash_aliases) -eq 0 ]; then
+				echo ". ~/IOTstack/.bash_aliases" >>~/.bash_aliases
+				echo "added aliases"
+			else
+				echo "aliases already added"
+			fi
+			source ~/.bashrc
+			echo "aliases will be available after a reboot"
+			;;
+		esac
+		;;
+		#Backup menu ---------------------------------------------------------------------
+	"backup")
+		backup_sellection=$(whiptail --title "Backup Options" --menu --notags \
+			"Select backup option" 20 78 12 -- \
+			"dropbox-uploader" "Dropbox-Uploader" \
+			"rclone" "google drive via rclone" \
+			3>&1 1>&2 2>&3)
+
+		case $backup_sellection in
+
+		"dropbox-uploader")
+			if [ ! -d ~/Dropbox-Uploader ]; then
+				git clone https://github.com/andreafabrizi/Dropbox-Uploader.git ~/Dropbox-Uploader
+				chmod +x ~/Dropbox-Uploader/dropbox_uploader.sh
+				pushd ~/Dropbox-Uploader && ./dropbox_uploader.sh
+				popd
+			else
+				echo "Dropbox uploader already installed"
+			fi
+
+			#add enable file for Dropbox-Uploader
+			[ -d ~/IOTstack/backups ] || sudo mkdir -p ~/IOTstack/backups/
+			sudo touch ~/IOTstack/backups/dropbox
+			;;
+		"rclone")
+			sudo apt install -y rclone
+			echo "Please run 'rclone config' to configure the rclone google drive backup"
+
+			#add enable file for rclone
+			[ -d ~/IOTstack/backups ] || sudo mkdir -p ~/IOTstack/backups/
+			sudo touch ~/IOTstack/backups/rclone
+			;;
+		esac
+		;;
+		#MAINMENU Misc commands------------------------------------------------------------
+	"misc")
+		misc_sellection=$(
+			whiptail --title "Miscellaneous Commands" --menu --notags \
+				"Some helpful commands" 20 78 12 -- \
+				"swap" "Disable swap by uninstalling swapfile" \
+				"swappiness" "Disable swap by setting swappiness to 0" \
+				"log2ram" "install log2ram to decrease load on sd card, moves /var/log into ram" \
+				3>&1 1>&2 2>&3
+		)
+
+		case $misc_sellection in
+		"swap")
+			sudo dphys-swapfile swapoff
+			sudo dphys-swapfile uninstall
+			sudo update-rc.d dphys-swapfile remove
+			sudo systemctl disable dphys-swapfile
+			#sudo apt-get remove dphys-swapfile
+			echo "Swap file has been removed"
+			;;
+		"swappiness")
+			if [ $(grep -c swappiness /etc/sysctl.conf) -eq 0 ]; then
+				echo "vm.swappiness=0" | sudo tee -a /etc/sysctl.conf
+				echo "updated /etc/sysctl.conf with vm.swappiness=0"
+			else
+				sudo sed -i "/vm.swappiness/c\vm.swappiness=0" /etc/sysctl.conf
+				echo "vm.swappiness found in /etc/sysctl.conf update to 0"
+			fi
+
+			sudo sysctl vm.swappiness=0
+			echo "set swappiness to 0 for immediate effect"
+			;;
+		"log2ram")
+			if [ ! -d ~/log2ram ]; then
+				git clone https://github.com/azlux/log2ram.git ~/log2ram
+				chmod +x ~/log2ram/install.sh
+				pushd ~/log2ram && sudo ./install.sh
+				popd
+			else
+				echo "log2ram already installed"
+			fi
+			;;
+		esac
+		;;
+
+	"hassio")
+		echo "install requirements for hass.io"
+		sudo apt install -y bash jq curl avahi-daemon dbus
+		hassio_machine=$(whiptail --title "Machine type" --menu \
+			"Please select you device type" 20 78 12 -- \
+			"raspberrypi4" " " \
+			"raspberrypi3" " " \
+			"raspberrypi2" " " \
+			"raspberrypi4-64" " " \
+			"raspberrypi3-64" " " \
+			"qemux86" " " \
+			"qemux86-64" " " \
+			"qemuarm" " " \
+			"qemuarm-64" " " \
+			"orangepi-prime" " " \
+			"odroid-xu" " " \
+			"odroid-c2" " " \
+			"intel-nuc" " " \
+			"tinker" " " \
+			3>&1 1>&2 2>&3)
+		if [ -n "$hassio_machine" ]; then
+			curl -sL https://raw.githubusercontent.com/home-assistant/supervised-installer/master/installer.sh | sudo bash -s -- -m $hassio_machine
+		else
+			echo "no selection"
+			exit
+		fi
+		;;
+	"update")
+		echo "Pulling latest project file from Github.com ---------------------------------------------"
+		git pull origin $CURRENT_BRANCH
+		echo "git status ------------------------------------------------------------------------------"
+		git status
+		;;
+	"native")
+
+		native_selections=$(whiptail --title "Native installs" --menu --notags \
+			"Install local applications" 20 78 12 -- \
+			"rtl_433" "RTL_433" \
+			"rpieasy" "RPIEasy" \
+			3>&1 1>&2 2>&3)
+
+		case $native_selections in
+		"rtl_433")
+			bash ./.native/rtl_433.sh
+			;;
+		"rpieasy")
+			bash ./.native/rpieasy.sh
+			;;
+		esac
+		;;
+	"configure")
+
+		BASE_DIR=$(whiptail --inputbox "Fullpath to storage volumes and configuration" 8 39 $BASE_DIR --title "Configura dir" 3>&1 1>&2 2>&3)
+		echo "BASE_DIR=$BASE_DIR" > ./.params_menu
+		;;
+	"exit")
 		exit
-	fi
-	;;
-"update")
-	echo "Pulling latest project file from Github.com ---------------------------------------------"
-	git pull origin $CURRENT_BRANCH
-	echo "git status ------------------------------------------------------------------------------"
-	git status
-	;;
-"native")
-
-	native_selections=$(whiptail --title "Native installs" --menu --notags \
-		"Install local applications" 20 78 12 -- \
-		"rtl_433" "RTL_433" \
-		"rpieasy" "RPIEasy" \
-		3>&1 1>&2 2>&3)
-
-	case $native_selections in
-	"rtl_433")
-		bash ./.native/rtl_433.sh
+		do_loop=0
 		;;
-	"rpieasy")
-		bash ./.native/rpieasy.sh
-		;;
+	*) ;;
+
 	esac
-	;;
-"configure")
-
-	BASE_DIR=$(whiptail --inputbox "Fullpath to storage volumes and configuration" 8 39 $BASE_DIR --title "Configura dir" 3>&1 1>&2 2>&3)
-    echo "BASE_DIR=$BASE_DIR" > ./.params_menu
-	;;
-*) ;;
-
-esac
-
+	else
+     do_loop=0
+	fi
+done
 popd > /dev/null 2>&1
