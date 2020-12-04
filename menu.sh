@@ -262,6 +262,7 @@ function do_python3_pip() {
 function yml_builder() {
 
 	service="$BASE_DIR/services/$1/service.yml"
+	local_msg=""
 
 	[ -d $BASE_DIR/services/ ] || mkdir -p $BASE_DIR/services/
 
@@ -280,8 +281,7 @@ function yml_builder() {
 			echo "...pulled full $1 from template"
 			rsync -a -q .templates/$1/ $BASE_DIR/services/$1/ --exclude 'build.sh'
 			get_details $1
-			[ -f .templates/$1/messge.txt] && $(whiptail --title "Opening file" --yesno "$(cat $file)" --scrolltext 78 78 3>&1 1>&2 2>&3)
-			;;
+            ;;
 		"env")
 			echo "...pulled $1 excluding env file"
 			rsync -a -q .templates/$1/ $BASE_DIR/services/$1/ --exclude 'build.sh' --exclude '$1.env' --exclude '*.conf'
@@ -537,9 +537,11 @@ while [ $do_loop = 1 ] ; do
 				echo "no override found, using docker-compose.yml"
 				cp $TMP_DOCKER_COMPOSE_YML $DOCKER_COMPOSE_YML
 			fi
-
-			echo "docker-compose successfully created"
-			echo "run 'docker-compose up -d' to start the stack"
+			if (whiptail --title "Docker-compose generated" --yesno "Launch now ?" 8 78); then
+    					docker-compose up -d
+				else
+    			whiptail --title "Launch Instruction" --msgbox "run 'docker-compose up -d' to start the stack" 8 78
+			fi
 		else
 
 			echo "Build cancelled"
