@@ -36,8 +36,8 @@ declare -A cont_array=(
 	[adminer]="Adminer"
 	[openhab]="openHAB"
 	[zigbee2mqtt]="zigbee2mqtt"
-	[deconz]="deCONZ"
-	[pihole]="Pi-Hole"
+	[deconz]="deCONZ ConBee/RaspBee Zigbee gateways "
+	[pihole]="Pi-Hole DNS Manager"
 	[plex]="Plex media server"
 	[tasmoadmin]="TasmoAdmin"
 	[rtl_433]="RTL_433 to mqtt"
@@ -310,7 +310,6 @@ function yml_builder() {
 	echo "" >> $TMP_DOCKER_COMPOSE_YML
 	#fixing volumes
 	sed -i "s|\.\/volumes|$BASE_DIR\/volumes|g" $service
-	echo "s|\.\/volumes|$BASE_DIR\/volumes|g"	
 	cat $service >> $TMP_DOCKER_COMPOSE_YML
 
 	#test for post build
@@ -384,6 +383,17 @@ function get_details(){
 		sed -i "$rep" $servicefile 
 		done
 }
+
+
+#----------
+# only as root
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root" 
+   exit 1
+   else
+   echo "Run as root: OK"
+fi
+
 
 #---------------------------------------------------------------------------------------------------
 # Project updates
@@ -562,6 +572,7 @@ while [ $do_loop = 1 ] ; do
 				"pull" "Update all containers" \
 				"prune_volumes" "Delete all stopped containers and docker volumes" \
 				"prune_images" "Delete all images not associated with container" \
+				"purge" "Purge all data from $BASE_DIR" \
 				3>&1 1>&2 2>&3
 		)
 
@@ -573,6 +584,8 @@ while [ $do_loop = 1 ] ; do
 		"pull") ./scripts/update.sh ;;
 		"prune_volumes") ./scripts/prune-volumes.sh ;;
 		"prune_images") ./scripts/prune-images.sh ;;
+		"clean") ./scripts/clean-containers ;;
+		"purge") ./scripts/clean-data.sh $BASE_DIR ;;
 		"aliases")
 			touch ~/.bash_aliases
 			if [ $(grep -c 'IOTstack' ~/.bash_aliases) -eq 0 ]; then
