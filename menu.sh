@@ -772,6 +772,7 @@ while [ $do_loop = 1 ] ; do
 	  				localip=$(ifconfig wlan0 | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
 			fi
 			if (whiptail --title "Start mini web server" --yesno "Start mini web server at http://$localip:18008 press CTRL-C to exit" 16 40); then
+						get_all_ports
     					bash scripts/tsws 0.0.0.0 18008 $BASE_DIR/ports_parts.phtml
 			fi
 		else
