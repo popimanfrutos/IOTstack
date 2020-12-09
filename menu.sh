@@ -477,6 +477,7 @@ while [ $do_loop = 1 ] ; do
 		"commands" "Docker commands" \
 		"backup" "Backup options" \
 		"misc" "Miscellaneous commands" \
+		"web" "Start a 'miniweb' server" \
 		"configure" "Base directory configuration" \
 		"update" "Update IOTstack" \
 		"exit" "Exit" \
@@ -764,6 +765,19 @@ while [ $do_loop = 1 ] ; do
 		BASE_DIR=$(whiptail --inputbox "Fullpath to storage volumes and configuration" 8 39 $BASE_DIR --title "Configura dir" 3>&1 1>&2 2>&3)
 		echo "BASE_DIR=$BASE_DIR" > ./.params_menu
 		;;
+	"web")
+	    if [ -f $BASE_DIR/ports_parts.phtml ]; then
+		    localip=$(ifconfig eth0 | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
+			if [ -z $localip ]; then
+	  				localip=$(ifconfig wlan0 | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
+			fi
+			if (whiptail --title "Start mini web server" --yesno "Start mini web server at http://$localip:18008 press CTRL-C to exit" 16 40); then
+    					bash scripts/tsws 0.0.0.0 18008 $BASE_DIR/ports_parts.phtml
+			fi
+		else
+		    whiptail --title "No InfoFile" --msgbox "Run Build Stack first" 8 78
+		fi
+	    ;;
 	"exit")
 		exit
 		do_loop=0
