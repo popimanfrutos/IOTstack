@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # build Dockerfile for nodered
+BASE_DIR=$1
+
 
 node_selection=$(whiptail --title "Node-RED nodes" --checklist --separate-output \
 	"Use the [SPACEBAR] to select the nodes you want preinstalled" 20 78 12 -- \
@@ -45,7 +47,7 @@ node_selection=$(whiptail --title "Node-RED nodes" --checklist --separate-output
 ##echo "$check_selection"
 mapfile -t checked_nodes <<<"$node_selection"
 
-nr_dfile=./services/nodered/Dockerfile
+nr_dfile=$BASE_DIR/services/nodered/Dockerfile
 
 sqliteflag=0
 

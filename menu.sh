@@ -14,6 +14,9 @@ BASE_DIR=./
 # Load params from file
 [ -f ./.params_menu ] && . ./.params_menu
 
+PORTS_FILE=$BASE_DIR/ports_parts.phtml
+
+
 # Minimum Software Versions
 COMPOSE_VERSION="3.6"
 REQ_DOCKER_VERSION=18.2.0
@@ -295,7 +298,7 @@ function yml_builder() {
 	else
 		mkdir -p  $BASE_DIR/services/$1
 		echo "...pulled full $1 from template"
-		rsync -a -q .templates/$1/  $BASE_DIR/services/$1/ --exclude 'build.sh'
+		rsync -a -q .templates/$1/  $BASE_DIR/services/$1/ # --exclude 'build.sh'
 		get_details $1
 	fi
 
@@ -382,6 +385,33 @@ function get_details(){
 	for rep in ${sed_string[@]} ; do
 		sed -i "$rep" $servicefile 
 		done
+}
+
+
+# Get all Ports  
+# parameter : docker-compose file
+function get_all_ports(){
+	
+    rm $PORTS_FILE
+	touch $PORTS_FILE
+	# read local ip
+	localip=$(ifconfig eth0 | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
+	if [ -z $localip ]; then
+	  localip=$(ifconfig wlan0 | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
+	fi 
+	docker-compose ps |while IFS= read -r line
+	do
+		echo $line
+		if [[ $line == *"->"* ]]; then
+			#has port
+             is_service=$( echo $line |cut -d" " -f1 )
+			 is_port=$(echo $line|cut -d":" -f2|cut -d"-" -f1)
+			echo "<tr>  <td class='th'>Service : $is_service </td> <td><a href=http://$localip:$is_port>$is_port</a></td> </tr>" >> $PORTS_FILE
+			echo $is_service $is_port
+       fi
+
+	done 
+
 }
 
 
@@ -549,6 +579,7 @@ while [ $do_loop = 1 ] ; do
 			fi
 			if (whiptail --title "Docker-compose generated" --yesno "Launch now ?" 8 40); then
     					docker-compose up -d
+						get_all_ports
 				else
     			whiptail --title "Launch Instruction" --msgbox "run 'docker-compose up -d' to start the stack" 8 78
 			fi
