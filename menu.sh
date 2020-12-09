@@ -317,8 +317,8 @@ function yml_builder() {
 
 	#test for post build
 	if [ -f ./.templates/$1/build.sh ]; then
-		chmod +x ./.templates/$1/build.sh  $BASE_DIR
-		bash ./.templates/$1/build.sh
+		chmod +x ./.templates/$1/build.sh
+		bash ./.templates/$1/build.sh  $BASE_DIR
 	fi
 
 	#test for directoryfix.sh
