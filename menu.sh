@@ -299,7 +299,6 @@ function yml_builder() {
 		get_details $1
 	fi
 
-
 	#if an env file exists check for timezone
 	[ -f "$BASE_DIR/services/$1/$1.env" ] && timezones  $BASE_DIR/services/$1/$1.env
 
@@ -310,6 +309,7 @@ function yml_builder() {
 	echo "" >> $TMP_DOCKER_COMPOSE_YML
 	#fixing volumes
 	sed -i "s|\.\/volumes|$BASE_DIR\/volumes|g" $service
+	sed -i "s|\.\/services|$BASE_DIR\/services|g" $service
 	cat $service >> $TMP_DOCKER_COMPOSE_YML
 
 	#test for post build
@@ -547,7 +547,7 @@ while [ $do_loop = 1 ] ; do
 				echo "no override found, using docker-compose.yml"
 				cp $TMP_DOCKER_COMPOSE_YML $DOCKER_COMPOSE_YML
 			fi
-			if (whiptail --title "Docker-compose generated" --yesno "Launch now ?" 8 78); then
+			if (whiptail --title "Docker-compose generated" --yesno "Launch now ?" 8 40); then
     					docker-compose up -d
 				else
     			whiptail --title "Launch Instruction" --msgbox "run 'docker-compose up -d' to start the stack" 8 78
