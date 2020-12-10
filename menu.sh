@@ -339,10 +339,11 @@ function yml_builder() {
 function get_details(){
 	service_process=$1
 	servicefile="$BASE_DIR/services/$service_process/service.yml"
+	messagefile=".templates/$1/message.txt"
 	sed_string=()
-
 	local_status=0
 
+	[ -f $messagefile ] && whiptail --title "Mesagge from $service_process" --msgbox --scrolltext "$(cat $messagefile)" 20 60 3>&1 1>&2 2>&3
 	while IFS= read -r line
 	do
 		if [ $local_status = 1 ]; then

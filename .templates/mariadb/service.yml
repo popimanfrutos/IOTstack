@@ -1,10 +1,13 @@
   mariadb:
-    image: linuxserver/mariadb
+    image: yobasystems/alpine-mariadb
     container_name: mariadb
     env_file:
       - ./services/mariadb/mariadb.env
     volumes:
       - ./volumes/mariadb/config:/config
+      - /etc/localtime:/etc/localtime:ro
     ports:
       - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=ROOT_ACCESS_PASSWORD
     restart: unless-stopped

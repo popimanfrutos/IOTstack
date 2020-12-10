@@ -1,0 +1,7 @@
+IMPORTANT DETAIL : service NextCloud
+====================================
+
+During the configuration select mysql as database.
+
+To configure Nexcloud use as database host "nextcloud_db".
+The rest of the parameters as configured here.
