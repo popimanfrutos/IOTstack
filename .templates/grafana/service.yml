@@ -7,6 +7,9 @@
       - "3000:3000"
     env_file:
       - ./services/grafana/grafana.env
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - ./volumes/grafana/data:/var/lib/grafana
       - ./volumes/grafana/log:/var/log/grafana
