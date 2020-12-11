@@ -9,10 +9,10 @@ fi
 
 # Configure Prometheus Add-ons
 
-option_selection=$(whiptail --title "Select Prometheus Options" --checklist --separate-output \
-  "Use the [SPACEBAR] to select add-on containers from the list below." 20 78 12 -- \
-  "node-exporter" "monitor this computer " "ON" \
-  "cadvisor-arm" "monitor full container stack " "ON" \
+option_selection=$(whiptail --title "Select Prometheus Options" --checklist --separate-output\
+  "Use the [SPACEBAR] to select add-on containers from the list below." 20 78 12 --\
+  "node-exporter" "monitor this computer " "ON"\
+  "cadvisor-arm" "monitor full container stack " "ON"\
   3>&1 1>&2 2>&3)
 
 mapfile -t selected_options <<< "$option_selection"
@@ -25,7 +25,7 @@ for option in "${selected_options[@]}"; do
 
   # include add-on in depends_on
   sed -i.bak -e "/depends_on:/a\\
-    \\ \\ \\ \\ \\ \\ - ${option}" $DOCKER_COMPOSE_PATH
+   \\ \\ \\ - ${option}" $DOCKER_COMPOSE_PATH
 done
 
 # clean up

@@ -4,7 +4,7 @@
     restart: unless-stopped
     user: "0"
     ports:
-      - 9090:9090
+      - "9090:9090"
     env_file:
       - ./services/prometheus/prometheus.env
     depends_on:

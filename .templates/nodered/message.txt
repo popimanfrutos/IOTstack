@@ -1,0 +1,5 @@
+IMPORTANT
+=========
+
+The nodered service takes longer than usual to start up.
+Therefore wait a few minutes before launching the "miniweb".

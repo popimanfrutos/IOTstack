@@ -408,7 +408,6 @@ function get_all_ports(){
              is_service=$( echo $line |cut -d" " -f1 )
 			 is_port=$(echo $line|cut -d":" -f2|cut -d"-" -f1)
 			echo "<tr>  <td class='th'>Service : $is_service </td> <td><a href=http://$localip:$is_port>$is_port</a></td> </tr>" >> $PORTS_FILE
-			echo $is_service $is_port
        fi
 
 	done 
@@ -750,6 +749,7 @@ while [ $do_loop = 1 ] ; do
 			"Install local applications" 20 78 12 -- \
 			"rtl_433" "RTL_433" \
 			"rpieasy" "RPIEasy" \
+			"netdata" "NetData monitor \
 			3>&1 1>&2 2>&3)
 
 		case $native_selections in
@@ -759,6 +759,10 @@ while [ $do_loop = 1 ] ; do
 		"rpieasy")
 			bash ./.native/rpieasy.sh
 			;;
+		"netdata")
+			bash <(curl -Ss https://my-netdata.io/kickstart.sh)
+			service netdata start
+			whiptail --title "NetData is working" --msgbox "Netdata is working on port 19999" 4 78
 		esac
 		;;
 	"configure")
@@ -774,6 +778,7 @@ while [ $do_loop = 1 ] ; do
 			fi
 			if (whiptail --title "Start mini web server" --yesno "Start mini web server at http://$localip:18008 press CTRL-C to exit" 16 40); then
 						get_all_ports
+						clear
     					bash scripts/tsws 0.0.0.0 18008 $BASE_DIR/ports_parts.phtml
 			fi
 		else
