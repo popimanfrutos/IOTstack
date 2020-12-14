@@ -282,7 +282,7 @@ cat <<EOF
     <style type="text/css">@import url("/style.css");</style>
   </head>
   <body>
-    <h1>IOTSTCK, absolutely mini web server</h1>
+    <h1>IOTSTACK, absolutely mini web server</h1>
     <img class="graphic" src="/graphic.png" />
     <b>Repository is</b> <a href=https://github.com/cayetano/IOTstack> GitHab </a><br>
     <p><em>A web server in <a href="https://www.gnu.org/software/bash/">Bash</a> and <a href="http://nc110.sourceforge.net/">Netcat</a>.</em></p>

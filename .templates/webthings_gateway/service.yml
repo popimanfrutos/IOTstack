@@ -1,10 +1,10 @@
   webthings_gateway:
-    image: mozillaiot/gateway:arm
+    image: mozillaiot/gateway
     container_name: webthings_gateway
     network_mode: host
-    #ports:
-    # - 8080:8080
-    # - 4443:4443
+    ports:
+     - "8081:8080"
+     - "4443:4443"
     #devices:
     # - /dev/ttyACM0:/dev/ttyACM0
     volumes:

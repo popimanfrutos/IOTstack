@@ -1,0 +1,13 @@
+  nginx_manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: nginx-proxy-manager
+    volumes:
+      - ./volumes/nginx-manager/:/data
+      - ./volumes/nginx-manager/:/etc/letsencrypt
+    ports:
+      - "80:80"
+      - "443:443"
+      - "82:81"
+    env_file:
+      - ./services/nginx-manager/nginx_manager.env
+    restart: unless-stopped

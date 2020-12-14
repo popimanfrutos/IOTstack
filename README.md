@@ -1,6 +1,15 @@
 # IOT Stack
 IOTstack is a builder for docker-compose to easily make and maintain IoT stacks on the Raspberry Pi.
 
+## UPDATES
+
+14/12/2020
+----------
+- Update HASSIO INSTALL
+- Install cockpit
+- Install netdata
+- Added messages in stack install
+- Added comfiguration of HASSIO storage
 
 
 ## Video
