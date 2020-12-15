@@ -60,6 +60,7 @@ declare -A cont_array=(
 	[domoticz]="Domoticz"
 	[dozzle]="Dozzle"
 	[wireguard]="Wireguard"
+	[zabbix]="Zabbix Monitor Server"
 	# add yours here
 )
 
@@ -98,6 +99,7 @@ declare -a armhf_keys=(
 	"dozzle"
 	"wireguard"
 	"nginx-manager"
+	"zabbix"
 	# add yours here
 )
 sys_arch=$(uname -m)
@@ -469,7 +471,7 @@ fi
 # optional param : text
 # returm key
 function press_enter () {
-  [ -z $1 ] && localmsg="Press ENTER to continue...\n"
+  [ -z $1 ] && localmsg="Press ENTER to continue..."
   read -p "$localmsg" -r key
   return $key
 }
@@ -744,8 +746,10 @@ while [ $do_loop = 1 ] ; do
 			3>&1 1>&2 2>&3)
 		if [ -n "$hassio_machine" ]; then
 			mkdir -p $HASSIO_DIR
-			curl -sL https://raw.githubusercontent.com/home-assistant/supervised-installer/master/installer.sh | sudo bash -s -- -m $hassio_machine -d $HASSIO_DIR
+			curl -Lo ha_installer.sh https://raw.githubusercontent.com/home-assistant/supervised-installer/master/installer.sh
+			bash ha_installer.sh -m $hassio_machine -d $HASSIO_DIR
 			press_enter
+			rm ha_installer.sh
 		else
 			echo "no selection"
 			exit
@@ -765,6 +769,7 @@ while [ $do_loop = 1 ] ; do
 			"rpieasy" "RPIEasy" \
 			"netdata" "NetData monitor" \
 			"cockpit" "CockPit Remote manager and terminal" \
+			"zabbix" "Local zabbix agent" \
 			3>&1 1>&2 2>&3)
 
 		case $native_selections in
@@ -786,6 +791,12 @@ while [ $do_loop = 1 ] ; do
 			apt -y install cockpit cockpit-docker
 			service cockpit start
 			whiptail --title "CockPit is working" --msgbox "Cockpit is working on port 9090" 10 78
+			;;
+		"zabbix")
+			wget https://repo.zabbix.com/zabbix/5.2/raspbian/pool/main/z/zabbix-release/zabbix-release_5.2-1%2Bdebian10_all.deb
+			dpkg -i zabbix-release_5.2-1+debian10_all.deb 
+			apt update
+			apt install -y zabbix-agent
 		esac
 		;;
 	"configure")
@@ -793,7 +804,7 @@ while [ $do_loop = 1 ] ; do
 		BASE_DIR=$(whiptail --inputbox "Fullpath to storage volumes and configuration" 8 39 $BASE_DIR --title "Configura dir" 3>&1 1>&2 2>&3)
 		HASSIO_DIR=$(whiptail --inputbox "Fullpath to storage HASSIO files" 8 39 $HASSIO_DIR --title "Configura dir" 3>&1 1>&2 2>&3)
 		echo "BASE_DIR=$BASE_DIR" > ./.params_menu
-		echo "BASE_DIR=$HASSIO_DIR" > ./.params_menu
+		echo "HASSIO_DIR=$HASSIO_DIR" >> ./.params_menu
 		;;
 	"web")
 	    if [ -f $BASE_DIR/ports_parts.phtml ]; then

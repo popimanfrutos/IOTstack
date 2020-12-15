@@ -1,13 +1,39 @@
   nginx_manager:
-    image: jc21/nginx-proxy-manager:latest
-    container_name: nginx-proxy-manager
-    volumes:
-      - ./volumes/nginx-manager/:/data
-      - ./volumes/nginx-manager/:/etc/letsencrypt
+    image: jc21/nginx-proxy-manager:2
+    restart: always
+    container_name: nginx_manager
     ports:
+      # Public HTTP Port:
       - "80:80"
+      # Public HTTPS Port:
       - "443:443"
-      - "82:81"
-    env_file:
-      - ./services/nginx-manager/nginx_manager.env
-    restart: unless-stopped
+      # Admin Web Port:
+      - "81:81"
+    environment:
+      - DB_MYSQL_USER=npm
+      - DB_MYSQL_PASSWORD=npm
+      - DB_MYSQL_NAME=npm
+      - DB_MYSQL_HOST=nginx_manager_db
+      # Uncomment this if IPv6 is not enabled on your host
+      # DISABLE_IPV6: 'true'
+    volumes:
+      # Make sure this config.json file exists as per instructions above:
+      #- ./volumes/nginx-manager/config.json:/app/config/production.json
+      - ./volumes/nginx-manager/data:/data
+      - ./volumes/nginx-manager/letsencrypt:/etc/letsencrypt
+    depends_on:
+      - nginx_manager_db
+  nginx_manager_db:
+    image: webhippie/mariadb:latest
+    restart: always
+    container_name: db
+    environment:
+     - MARIADB_ROOT_PASSWORD=npm
+     - MARIADB_DATABASE=npm
+     - MARIADB_USERNAME=npm
+     - MARIADB_PASSWORD=npm
+     - MARIADB_PROT=3306
+    volumes:
+      - ./volumes/nginx-manager:/var/lib/mysql
+
+
