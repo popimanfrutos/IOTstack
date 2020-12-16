@@ -1,0 +1,4 @@
+Motion Eye
+----------
+
+Default user is admin with no password.

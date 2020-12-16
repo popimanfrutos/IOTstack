@@ -1,0 +1,4 @@
+Zeegbee2MQTT
+============
+
+Uses /dev/ttyACM0 as connection for the dongle.

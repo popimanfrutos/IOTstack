@@ -1,0 +1,7 @@
+pi-Hole
+=======
+
+Esternal port are configurable, 
+but DNS ports (53/tcp 53/udp)
+are not configurable.
+

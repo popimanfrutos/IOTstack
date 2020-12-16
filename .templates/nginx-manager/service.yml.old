@@ -1,0 +1,33 @@
+  nginx_manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: nginx-proxy-manager
+    volumes:
+     # - ./volumes/nginx-manager/config.json:/app/config/production.json
+      - ./volumes/nginx-manager:/data
+      - ./volumes/nginx-manager:/etc/letsencrypt
+    depends_on:
+      - db_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+      - "82:81"
+    env_file:
+      - ./services/nginx-manager/nginx_manager.env
+    environment:
+      - DB_MYSQL_USER=nginx_manager user
+      - DB_MYSQL_PASSWORD=nginx_manager_pass
+      - DB_MYSQL_NAME=nginx_manager
+    restart: unless-stopped
+  db_nginx:
+    image: webhippie/mariadb:latest
+    restart: unless-stopped
+    container_name: db_nginx
+    environment:
+      - MYSQL_ROOT_PASSWORD=nginx_manager_pass
+      - MYSQL_DATABASE=nginx_manager
+      - MYSQL_USER=nginx_manager
+      - MYSQL_PASSWORD=nginx_manager_pass
+    volumes:    
+      - ./volumes/nginx-manager:/var/lib/mysql
+    ports:
+      - "3307:3306"

@@ -1,0 +1,10 @@
+Zabbix Installation
+-------------------
+
+If the local agent is going to be used 
+(see native installations), 
+port 10050 must be changed on the server 
+or on the agent. 
+Better the first option.
+
+

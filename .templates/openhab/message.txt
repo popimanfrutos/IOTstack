@@ -1,0 +1,8 @@
+OpenHab
+=======
+
+External port es 8080 for http ans
+8443 for https.
+
+Sorry, but it is not editable, 
+it uses the host's own network.

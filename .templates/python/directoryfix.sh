@@ -1,4 +1,5 @@
 #!/bin/bash
+base_dir=$1
 
 # Directoryfix for python
 
@@ -6,8 +7,8 @@
 u=$(whoami)
 
 if [ ! -d ./volumes/python/app ]; then
-	sudo mkdir -p ./volumes/python/app
-	sudo chown -R $u:$u ./volumes/python
-	echo 'print("hello world")' >./volumes/python/app/app.py
+	sudo mkdir -p $base_dir/volumes/python/app
+	sudo chown -R $u:$u $base_dir/volumes/python
+	echo 'print("hello world")' >$base_dir/volumes/python/app/app.py
 
 fi

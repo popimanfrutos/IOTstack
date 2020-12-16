@@ -1,5 +1,5 @@
 #!/bin/bash
-
+base_dir=$1
 #deCONZ device configuration
 
 DOCKER_COMPOSE_PATH=./.tmp/docker-compose.tmp.yml
