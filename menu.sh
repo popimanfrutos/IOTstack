@@ -794,9 +794,10 @@ while [ $do_loop = 1 ] ; do
 			;;
 		"zabbix")
 			wget https://repo.zabbix.com/zabbix/5.2/raspbian/pool/main/z/zabbix-release/zabbix-release_5.2-1%2Bdebian10_all.deb
-			dpkg -i zabbix-release_5.2-1+debian10_all.deb 
+			dpkg -i zabbix*.deb 
 			apt update
 			apt install -y zabbix-agent
+			rm -f zabbix*.deb
 		esac
 		;;
 	"configure")
