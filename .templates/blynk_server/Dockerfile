@@ -1,4 +1,4 @@
-FROM adoptopenjdk/openjdk11
+FROM adoptopenjdk/openjdk15
 MAINTAINER Graham Garner <garner.gc@gmail.com>
 
 #RUN apt-get update 

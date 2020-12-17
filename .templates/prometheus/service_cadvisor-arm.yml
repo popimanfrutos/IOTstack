@@ -5,7 +5,7 @@
     user: "0"
     privileged: true
     ports:
-      - 8080:8080
+      - 8070:8080
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:rw

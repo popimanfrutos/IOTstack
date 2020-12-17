@@ -16,7 +16,7 @@ HASSIO_DIR=./hassio
 [ -f ./.params_menu ] && . ./.params_menu
 
 PORTS_FILE=$BASE_DIR/ports_parts.phtml
-
+GLOBAL_PORTS=""
 
 # Minimum Software Versions
 COMPOSE_VERSION="3.6"
@@ -350,14 +350,27 @@ function get_details(){
 	while IFS= read -r line
 	do
 		if [ $local_status = 1 ]; then
-			if [[ $line == *"- "* ]]; then
+			if [[ $line == *"- "* ]] && [[ $line == *"\""* ]]; then
 				outport=$( echo $line |cut -d'"' -f2 |cut -d":" -f1 )
 				inport=$( echo $line |cut -d':' -f2 |cut -d'"' -f1 )
-				replaceport=$(whiptail --inputbox "Map port $inport to external port" 8 39 $outport --title "Ports of service $service_process" 3>&1 1>&2 2>&3)
-				exitstatus=$?
-				if [ $exitstatus = 0 ]; then
-					sed_string+=("s/$outport:$inport/$replaceport:$inport/g")
-				fi        
+				is_ok=0
+				while [ $is_ok -eq 0 ]; do
+					is_ok=1
+				    replaceport=$(whiptail --inputbox "Map port $inport to external port" 8 39 $outport --title "Ports of service $service_process" 3>&1 1>&2 2>&3)
+					exitstatus=$?
+					if [ $exitstatus = 0 ]; then
+						localports=$(netstat -putona |grep ":$replaceport ")
+						echo -- $localports -- $is_ok
+						[ -z $localports ] || is_ok=0
+						[[ $GLOBAL_PORTS == *":$replaceport" ]] && is_ok=0
+						if [ $is_ok = 1 ]; then
+							sed_string+=("s/$outport:$inport/$replaceport:$inport/g")
+						else
+							whiptail --title "Port $replaceport is in use" --msgbox "Port $replaceport is used by system or by oter deploy." 8 78
+						fi
+					fi        
+
+				done
 			else
 				local_status=0
 			fi
@@ -403,20 +416,36 @@ function get_all_ports(){
 	if [ -z $localip ]; then
 	  localip=$(ifconfig wlan0 | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
 	fi 
-	docker-compose ps |while IFS= read -r line
-	do
-		echo $line
-		if [[ $line == *"->"* ]]; then
-			#has port
-             is_service=$( echo $line |cut -d" " -f1 )
-			 is_port=$(echo $line|cut -d":" -f2|cut -d"-" -f1)
+	#docker-compose ps |while IFS= read -r line
+	#do
+	#	echo $line
+	#	if [[ $line == *"->"* ]]; then
+	#		#has port
+    #         is_service=$( echo $line |cut -d" " -f1 )
+	#		 is_port=$(echo $line|cut -d":" -f2|cut -d"-" -f1)
+	#		echo "<tr>  <td class='th'>Service : $is_service </td> <td><a href=http://$localip:$is_port>$is_port</a></td> </tr>" >> $PORTS_FILE
+    #   fi
+
+	#done 
+	for d in $BASE_DIR/services/*/ ; do
+		if [ -f $d/ports.out ]; then
+			is_service=$(echo $d |rev|cut -d"/" -f 2|rev)
+			or_port=$(cat $d/ports.out|tr -d [:blank:] )
+			is_port=$(cat $d/service.yml| grep ":$or_port"|cut -d'"' -f 2|cut -d":" -f1)
+			echo $is_service $or_port $is_port
 			echo "<tr>  <td class='th'>Service : $is_service </td> <td><a href=http://$localip:$is_port>$is_port</a></td> </tr>" >> $PORTS_FILE
-       fi
-
-	done 
-
+		fi
+		
+	done
 }
 
+# AUX funcion - press enter to continue
+# optional param : text
+# returm key
+function press_enter () {
+  [ -z $1 ] && localmsg="Press ENTER to continue..."
+  read -n 1 -s -r -p "$localmsg"
+}
 
 #----------
 # only as root
@@ -466,15 +495,6 @@ else
 	echo "docker not installed"
 fi
 
-
-# AUX funcion - press enter to continue
-# optional param : text
-# returm key
-function press_enter () {
-  [ -z $1 ] && localmsg="Press ENTER to continue..."
-  read -p "$localmsg" -r key
-  return $key
-}
 
 
 #---------------------------------------------------------------------------------------------------
@@ -559,7 +579,7 @@ while [ $do_loop = 1 ] ; do
 		#if no container is selected then dont overwrite the docker-compose.yml file
 		if [ -n "$container_selection" ]; then
 			touch $TMP_DOCKER_COMPOSE_YML
-
+			GLOBAL_PORTS=""
 			echo "version: '$COMPOSE_VERSION'" > $TMP_DOCKER_COMPOSE_YML
 			echo "services:" >> $TMP_DOCKER_COMPOSE_YML
 
@@ -611,6 +631,7 @@ while [ $do_loop = 1 ] ; do
 			whiptail --title "Docker commands" --menu --notags \
 				"Shortcut to common docker commands" 20 78 12 -- \
 				"aliases" "Add iotstack_up and iotstack_down aliases" \
+				"status" "Status of stack in Docker" \
 				"start" "Start stack" \
 				"restart" "Restart stack" \
 				"stop" "Stop stack" \
@@ -632,6 +653,11 @@ while [ $do_loop = 1 ] ; do
 		"prune_images") ./scripts/prune-images.sh ;;
 		"clean") ./scripts/clean-containers ;;
 		"purge") ./scripts/clean-data.sh $BASE_DIR ;;
+		"status")
+			clear
+			docker-compose ps
+			press_enter
+			;;
 		"aliases")
 			touch ~/.bash_aliases
 			if [ $(grep -c 'IOTstack' ~/.bash_aliases) -eq 0 ]; then
@@ -806,7 +832,7 @@ while [ $do_loop = 1 ] ; do
 		HASSIO_DIR=$(whiptail --inputbox "Fullpath to storage HASSIO files" 8 39 $HASSIO_DIR --title "Configura dir" 3>&1 1>&2 2>&3)
 		echo "BASE_DIR=$BASE_DIR" > ./.params_menu
 		echo "HASSIO_DIR=$HASSIO_DIR" >> ./.params_menu
-		;;
+		;; 
 	"web")
 	    if [ -f $BASE_DIR/ports_parts.phtml ]; then
 		    localip=$(ifconfig eth0 | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
