@@ -796,6 +796,7 @@ while [ $do_loop = 1 ] ; do
 			"netdata" "NetData monitor" \
 			"cockpit" "CockPit Remote manager and terminal" \
 			"zabbix" "Local zabbix agent" \
+			"duckdns" "Enable and Configure DuckDNS" \
 			3>&1 1>&2 2>&3)
 
 		case $native_selections in
@@ -824,6 +825,38 @@ while [ $do_loop = 1 ] ; do
 			apt update
 			apt install -y zabbix-agent
 			rm -f zabbix*.deb
+			;;
+		"duckdns")
+			duck_selection=$(whiptail --title "DuckDNS" --menu --notags \
+			"DuckDNS configure and install" 20 78 12 -- \
+			"configure" "Configure DuckDNS" \
+			"install" "Install DuckDNS autoupdate Script" \
+			3>&1 1>&2 2>&3)
+			case $duck_selection in
+				"configure")
+					$duck_dns_key=''
+					$duck_dns_domain=''
+					[ -f ./.duckdns.param ] && . ./.duckdns.param
+					duck_dns_key=$(whiptail --inputbox "DuckDNS Tocken" 8 39 $duck_dns_key --title "DuckDNS" 3>&1 1>&2 2>&3)
+					duck_dns_domain=$(whiptail --inputbox "DuckDNS Domain" 8 39 $duck_dns_domain --title "DuckDNS" 3>&1 1>&2 2>&3)
+					echo "duck_dns_key=$duck_dns_key" > ./.duckdns.param
+					echo "duck_dns_domain=$duck_dns_domain" >> ./.duckdns.param
+					;;
+				"install")
+					if [ -f ".duckdns.param" ]; then
+						. ./.duckdns.param
+						mkdir -p /opt/duckdns
+						echo "echo url=\"https://www.duckdns.org/update?domains=$duck_dns_domain&token=$duck_dns_key\" | curl -k -o /var/log/duck.log -K -" > /opt/duckdns/duckdns.sh
+						chmod 700 /opt/duckdns/duckdns.sh
+						sed -i '/duckdns/d' /etc/crontab
+						echo "00 1    * * *   root   /opt/duckdns/duckdns.sh " >> /etc/crontab
+						service cron restart
+						/opt/duckdns/duckdns.sh
+					else
+						whiptail --title "DuckDNS ERROR" --msgbox "Please, configure DuckDNS first." 8 78
+					fi
+				esac
+			;;
 		esac
 		;;
 	"configure")
