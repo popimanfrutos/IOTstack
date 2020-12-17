@@ -3,6 +3,16 @@ IOTstack is a builder for docker-compose to easily make and maintain IoT stacks 
 
 ## UPDATES
 
+17/12/2020
+----------
+- fixed many small bugs
+- added warning and important messages during deployment
+- Docker status
+- ZAbbix Server stack ( Docker ) and navive agent install.
+- Important: Detection of used ports
+- new implementation of web access page/server
+- new implementation of ngnix proxy panager
+
 14/12/2020
 ----------
 - Update HASSIO INSTALL
