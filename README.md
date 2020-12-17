@@ -5,6 +5,7 @@ IOTstack is a builder for docker-compose to easily make and maintain IoT stacks 
 
 17/12/2020
 ----------
+- DuckerDns local install ( Native )
 - fixed many small bugs
 - added warning and important messages during deployment
 - Docker status
