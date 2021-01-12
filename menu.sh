@@ -513,6 +513,7 @@ while [ $do_loop = 1 ] ; do
 		"misc" "Miscellaneous commands" \
 		"web" "Start a 'miniweb' server" \
 		"configure" "Base directory configuration" \
+		"version" "Version Info" \
 		"update" "Update IOTstack" \
 		"exit" "Exit" \
 		3>&1 1>&2 2>&3)
@@ -521,6 +522,9 @@ while [ $do_loop = 1 ] ; do
 	if [ $exitstatus = 0 ]; then
 	case $mainmenu_selection in
 	#MAINMENU Install docker  ------------------------------------------------------------
+	"version")
+	     [ -f "IOTStack.version" ] && whiptail --title "Version Info" --msgbox --scrolltext "$(cat IOTStack.version)" 20 60 3>&1 1>&2 2>&3
+		;;
 	"install")
 		#sudo apt update && sudo apt upgrade -y ;;
 
@@ -772,6 +776,7 @@ while [ $do_loop = 1 ] ; do
 			3>&1 1>&2 2>&3)
 		if [ -n "$hassio_machine" ]; then
 			mkdir -p $HASSIO_DIR
+			apt -y install network-manager
 			curl -Lo ha_installer.sh https://raw.githubusercontent.com/home-assistant/supervised-installer/master/installer.sh
 			bash ha_installer.sh -m $hassio_machine -d $HASSIO_DIR
 			press_enter
