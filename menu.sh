@@ -787,10 +787,14 @@ while [ $do_loop = 1 ] ; do
 		fi
 		;;
 	"update")
+		clear
 		echo "Pulling latest project file from Github.com ---------------------------------------------"
 		git pull origin $CURRENT_BRANCH
 		echo "git status ------------------------------------------------------------------------------"
 		git status
+		echo "-----------------------------------------------------------------------------------------"
+		echo "Reload menu.sh"
+		exit
 		;;
 	"native")
 
