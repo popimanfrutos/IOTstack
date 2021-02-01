@@ -8,12 +8,12 @@
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=Europe/Berlin
-      - SERVERURL=ypur.url.here
+      - TZ=Europe/Madrid
+      - SERVERURL=your.url.here
       - SERVERPORT=51820
       - PEERS=1
       - PEERDNS=auto
-      - INTERNAL_SUBNET=100.64.0.0/24
+      - INTERNAL_SUBNET=10.64.0.0/24
     volumes:
       - ./services/wireguard/config:/config
       - /lib/modules:/lib/modules

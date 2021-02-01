@@ -719,6 +719,7 @@ while [ $do_loop = 1 ] ; do
 				"swappiness" "Disable swap by setting swappiness to 0" \
 				"log2ram" "install log2ram to decrease load on sd card, moves /var/log into ram" \
                                 "wirewardqr" "Show QR codes for Wiregrad VPN" \
+				"wirewardfl" "Show config file for WireWard VPN" \
 				3>&1 1>&2 2>&3
 		)
 
@@ -762,6 +763,23 @@ while [ $do_loop = 1 ] ; do
 						press_enter
 					fi
 				fi
+                        else
+                          whiptail --title "Error" --msgbox "Is Wireward Installed ??" 8 78
+                        fi
+                        ;;
+                "wirewardfl")
+                        if command_exists qrencode; then
+                               peer=$(whiptail --inputbox "Numerical Peer" 8 39 1 --title "Enter peer numerical order" 3>&1 1>&2 2>&3)
+                                if [ $exitstatus = 0 ]; then
+                                        if [ -f $BASE_DIR/services/wireguard/config/peer$peer/peer$peer.conf ]; then
+						clear
+						echo #---------- file wireward peer$peer
+                                                cat $BASE_DIR/services/wireguard/config/peer$peer/peer$peer.conf
+						echo #----------
+						echo
+                                                press_enter
+                                        fi
+                                fi
                         else
                           whiptail --title "Error" --msgbox "Is Wireward Installed ??" 8 78
                         fi
