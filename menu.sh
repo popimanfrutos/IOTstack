@@ -617,10 +617,11 @@ while [ $do_loop = 1 ] ; do
 				cp $TMP_DOCKER_COMPOSE_YML $DOCKER_COMPOSE_YML
 			fi
 			if (whiptail --title "Docker-compose generated" --yesno "Launch now ?" 8 40); then
-    					docker-compose up -d
-						get_all_ports
+    					docker-compose up -d 
+					press_enter
+					get_all_ports
 				else
-    			whiptail --title "Launch Instruction" --msgbox "run 'docker-compose up -d' to start the stack" 8 78
+         			whiptail --title "Launch Instruction" --msgbox "run 'docker-compose up -d' to start the stack" 8 78
 			fi
 		else
 
@@ -717,6 +718,7 @@ while [ $do_loop = 1 ] ; do
 				"swap" "Disable swap by uninstalling swapfile" \
 				"swappiness" "Disable swap by setting swappiness to 0" \
 				"log2ram" "install log2ram to decrease load on sd card, moves /var/log into ram" \
+                                "wirewardqr" "Show QR codes for Wiregrad VPN" \
 				3>&1 1>&2 2>&3
 		)
 
@@ -751,6 +753,19 @@ while [ $do_loop = 1 ] ; do
 				echo "log2ram already installed"
 			fi
 			;;
+                "wirewardqr")
+                        if command_exists qrencode; then
+                               peer=$(whiptail --inputbox "Numerical Peer" 8 39 1 --title "Enter peer numerical order" 3>&1 1>&2 2>&3)
+				if [ $exitstatus = 0 ]; then
+    					if [ -f $BASE_DIR/services/wireguard/config/peer$peer/peer$peer.conf ]; then
+						qrencode -t ansiutf8 < $BASE_DIR/services/wireguard/config/peer$peer/peer$peer.conf
+						press_enter
+					fi
+				fi
+                        else
+                          whiptail --title "Error" --msgbox "Is Wireward Installed ??" 8 78
+                        fi
+                        ;;
 		esac
 		;;
 
@@ -866,6 +881,7 @@ while [ $do_loop = 1 ] ; do
 					fi
 				esac
 			;;
+		
 		esac
 		;;
 	"configure")
