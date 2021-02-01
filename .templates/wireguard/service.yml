@@ -9,11 +9,11 @@
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Berlin
-      - SERVERURL=<enter yours>.duckdns.org #optional
-      - SERVERPORT=51820 #optional
-      - PEERS=1 #optional
-      - PEERDNS=auto #optional
-      - INTERNAL_SUBNET=100.64.0.0/24 #optional
+      - SERVERURL=ypur.url.here
+      - SERVERPORT=51820
+      - PEERS=1
+      - PEERDNS=auto
+      - INTERNAL_SUBNET=100.64.0.0/24
     volumes:
       - ./services/wireguard/config:/config
       - /lib/modules:/lib/modules

@@ -364,7 +364,7 @@ function get_details(){
 						[ -z $localports ] || is_ok=0
 						[[ $GLOBAL_PORTS == *":$replaceport" ]] && is_ok=0
 						if [ $is_ok = 1 ]; then
-							sed_string+=("s/$outport:$inport/$replaceport:$inport/g")
+							sed_string+=("s|$outport:$inport|$replaceport:$inport|g")
 						else
 							whiptail --title "Port $replaceport is in use" --msgbox "Port $replaceport is used by system or by oter deploy." 8 78
 						fi
@@ -382,7 +382,7 @@ function get_details(){
 				replacevalue=$(whiptail --inputbox "Set value for $nameofvalue" 8 39 $value --title "Value for service $service_process" 3>&1 1>&2 2>&3)
 				exitstatus=$?
 				if [ $exitstatus = 0 ]; then
-					sed_string+=("s/$nameofvalue=$value/$nameofvalue=$replacevalue/g")
+					sed_string+=("s|$nameofvalue=$value|$nameofvalue=$replacevalue|g")
 				fi        
 			else
 				local_status=0
