@@ -8,3 +8,4 @@
       - "1880:1880"
     volumes:
       - ./volumes/nodered/data:/data
+      - "/etc/timezone:/etc/timezone:ro"

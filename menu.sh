@@ -839,6 +839,7 @@ while [ $do_loop = 1 ] ; do
 			"cockpit" "CockPit Remote manager and terminal" \
 			"zabbix" "Local zabbix agent" \
 			"duckdns" "Enable and Configure DuckDNS" \
+			"zerotier" "Enable and Configure Zero Tier" \
 			3>&1 1>&2 2>&3)
 
 		case $native_selections in
@@ -899,7 +900,35 @@ while [ $do_loop = 1 ] ; do
 					fi
 				esac
 			;;
-		
+                "zerotier")
+                        zero_tier=$(whiptail --title "Zero Tier" --menu --notags \
+                        "Zero Tier configure and install" 20 78 12 -- \
+			"install" "Install DuckDNS autoupdate Script" \
+                        "configure" "Configure Zero Tier" \
+                        "info" "Info about ZeroTier install" \
+                        3>&1 1>&2 2>&3)
+                        case $zero_tier in
+                                "configure")
+                                        zero_tier_id=''
+                                        [ -f ./.zerotier.param ] && . ./.zerotier.param
+                                        zero_tier_id=$(whiptail --inputbox "ZeroTier Network ID" 8 39 $zero_tier_id --title "DuckDNS" 3>&1 1>&2 2>&3 )
+                                        echo "zero_tier_id=$zero_tier_id" > ./.zerotier.param
+					clear
+					zerotier-cli join $zero_tier_id
+					press_enter
+                                        ;;
+                                "install")
+					clear
+					curl -s 'https://raw.githubusercontent.com/zerotier/ZeroTierOne/master/doc/contact%40zerotier.com.gpg' | gpg --import && \
+					if z=$(curl -s 'https://install.zerotier.com/' | gpg); then echo "$z" | sudo bash; fi
+					press_enter
+				        ;;
+				"info")
+				zerotier_info=$(zerotier-cli info)
+				press_intro
+				whiptail --title "Zero Tier Info" --msgbox "$zerotier_info. You must hit OK to continue." 8 78
+                        esac
+			;;
 		esac
 		;;
 	"configure")
