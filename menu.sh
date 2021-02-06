@@ -903,7 +903,7 @@ while [ $do_loop = 1 ] ; do
                 "zerotier")
                         zero_tier=$(whiptail --title "Zero Tier" --menu --notags \
                         "Zero Tier configure and install" 20 78 12 -- \
-			"install" "Install DuckDNS autoupdate Script" \
+			"install" "Install ZeroTier client" \
                         "configure" "Configure Zero Tier" \
                         "info" "Info about ZeroTier install" \
                         3>&1 1>&2 2>&3)
