@@ -13,7 +13,7 @@
       - nextcloud_db
 
   nextcloud_db:
-    image: yobasystems/alpine-mariadb:latest
+    image: jsurf/rpi-mariadb
     container_name: nextcloud_db
     volumes:
       - ./volumes/nextcloud/db:/config
