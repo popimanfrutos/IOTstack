@@ -1,0 +1,6 @@
+MeshCentral
+===========
+
+Remote Center for IOTStack
+
+REQUIRE: NginxManager, domanin and certificate.
