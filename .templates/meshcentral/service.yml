@@ -1,0 +1,30 @@
+  meshcentral2: 
+    image: "cayetano/meshcentral2:latest"
+    build: "./services/meshcentral/."
+    container_name: "meshcentral"
+    restart: "unless-stopped"
+    ulimits:
+      nofile:
+        soft: 800000
+        hard: 1000000
+    volumes:
+    - "./volumes/meshcentral/meshcentral-data:/srv/meshcentral2/meshcentral-data"
+    - "./volumes/meshcentral/meshcentral-files:/srv/meshcentral2/meshcentral-files"
+    - "./volumes/meshcentral/meshcentral-backup:/srv/meshcentral2/backup"
+    env_file:
+    - "./services/meshcentral/meshcentral.env"
+    ports: 
+    - "9019:80"
+    - "9443:443"
+  mongo:
+   image: "antsman/rpi-mongodb"
+   container_name: "mongo"
+   command: "--serviceExecutor adaptive"
+   restart: "unless-stopped"
+   volumes:
+   - "./volumes/meshcentral/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d"
+   - "./volumes/meshcentral/mongodb-data:/data/db"
+   - "./volumes/meshcentral/mongodb-config:/data/configdb"
+   env_file:
+   - "./services/meshcentral/mongodb.env"
+

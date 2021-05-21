@@ -1,0 +1,18 @@
+{
+  "settings": {
+    "cert": "your.domain.here",
+    "port": 443,
+    "aliasPort": 443,
+    "redirPort": 80,
+    "redirAliasPort": 80,
+    "webRTC": true
+  },
+  "domains": {
+    "": {
+      "certUrl": "https://your.domain.here:443",
+      "title": "IOTStack",
+      "title2": "Remote Center",
+      "minify": true
+    }
+  }
+}

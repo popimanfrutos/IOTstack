@@ -51,7 +51,7 @@ declare -A cont_array=(
 	[blynk_server]="blynk-server"
 	[nextcloud]="Next-Cloud"
 	[nginx]="NGINX by linuxserver"
-    [nginx-manager]="NGINX Manager Proxy"
+        [nginx-manager]="NGINX Manager Proxy"
 	[diyhue]="diyHue"
 	[homebridge]="Homebridge"
 	[python]="Python 3"
@@ -61,6 +61,7 @@ declare -A cont_array=(
 	[dozzle]="Dozzle"
 	[wireguard]="Wireguard"
 	[zabbix]="Zabbix Monitor Server"
+	[meshcentral]="Mesh Central mini server"
 	# add yours here
 )
 
@@ -100,6 +101,7 @@ declare -a armhf_keys=(
 	"wireguard"
 	"nginx-manager"
 	"zabbix"
+	"meshcentral"
 	# add yours here
 )
 sys_arch=$(uname -m)
