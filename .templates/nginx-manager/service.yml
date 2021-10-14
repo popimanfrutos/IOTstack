@@ -21,19 +21,22 @@
       #- ./volumes/nginx-manager/config.json:/app/config/production.json
       - ./volumes/nginx-manager/data:/data
       - ./volumes/nginx-manager/letsencrypt:/etc/letsencrypt
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
     depends_on:
       - nginx_manager_db
+
   nginx_manager_db:
-    image: webhippie/mariadb:latest
-    restart: always
+    image: 'jsurf/rpi-mariadb:latest'
     container_name: db
     environment:
-     - MARIADB_ROOT_PASSWORD=npm
-     - MARIADB_DATABASE=npm
-     - MARIADB_USERNAME=npm
-     - MARIADB_PASSWORD=npm
-     - MARIADB_PROT=3306
+     -  MYSQL_ROOT_PASSWORD=npm
+     -  MYSQL_DATABASE=npm
+     -  MYSQL_USER=npm
+     -  MYSQL_PASSWORD=npm
     volumes:
-      - ./volumes/nginx-manager:/var/lib/mysql
+      - ./volumes/nginx-manager/mysql:/var/lib/mysql:rw
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
 
 

@@ -811,7 +811,7 @@ while [ $do_loop = 1 ] ; do
 			3>&1 1>&2 2>&3)
 		if [ -n "$hassio_machine" ]; then
 			mkdir -p $HASSIO_DIR
-			apt -y install network-manager
+			apt -y install network-manager apparmor jq
 			curl -Lo ha_installer.sh https://raw.githubusercontent.com/home-assistant/supervised-installer/master/installer.sh
 			bash ha_installer.sh -m $hassio_machine -d $HASSIO_DIR
 			press_enter
