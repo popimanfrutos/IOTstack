@@ -791,29 +791,28 @@ while [ $do_loop = 1 ] ; do
 
 	"hassio")
 		echo "install requirements for hass.io"
-		sudo apt install -y bash jq curl avahi-daemon dbus apparmor
 		hassio_machine=$(whiptail --title "Machine type" --menu \
 			"Please select you device type" 20 78 12 -- \
-			"raspberrypi4" " " \
-			"raspberrypi3" " " \
-			"raspberrypi2" " " \
-			"raspberrypi4-64" " " \
-			"raspberrypi3-64" " " \
-			"qemux86" " " \
-			"qemux86-64" " " \
-			"qemuarm" " " \
-			"qemuarm-64" " " \
-			"orangepi-prime" " " \
-			"odroid-xu" " " \
-			"odroid-c2" " " \
-			"intel-nuc" " " \
-			"tinker" " " \
+			"armv5" "Raspberry 3" \
+			"armv7" "Raspberry 4" \
+			"amd64" "AMD 64" \
+			"386" "PC 32 bits" \
+			"x86_64" "PC 64 bits" \
 			3>&1 1>&2 2>&3)
 		if [ -n "$hassio_machine" ]; then
 			mkdir -p $HASSIO_DIR
-			apt -y install network-manager apparmor jq
-			curl -Lo ha_installer.sh https://raw.githubusercontent.com/home-assistant/supervised-installer/master/installer.sh
-			bash ha_installer.sh -m $hassio_machine -d $HASSIO_DIR
+                        wget https://github.com/home-assistant/os-agent/releases/download/1.2.2/os-agent_1.2.2_linux_$hassio_machine.deb
+			apt -y install jq wget curl udisks2 libglib2.0-bin network-manager dbus
+                        wget https://github.com/home-assistant/supervised-installer/releases/latest/download/homeassistant-supervised.deb
+			clear
+                        echo "-----------------------------------------"
+			echo "+++ Installing agent"
+                        echo "-----------------------------------------"
+			dpkg -i os-agent*.deb
+                        echo "-----------------------------------------"
+                        echo "+++ Installing Home Assistant"
+                        echo "-----------------------------------------"
+                        dpkg -i homeassistant-supervised.deb
 			press_enter
 			rm ha_installer.sh
 		else
