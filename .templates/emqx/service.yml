@@ -1,0 +1,20 @@
+  emqx:
+    image: emqx/emqx:4.3.10
+    restart: always
+    ports:
+      - "18083:18083"
+      - 18084:18084
+      - 1883:1883
+      - 8883:8883
+      - 8083:8083
+      - 8084:8084
+      - 8081:8081
+    environment:
+      EMQX_NAME: mqtt-server
+      EMQX_HOST: 192.168.168.247
+      EMQX_ALLOW_ANONYMOUS: "true"
+      EMQX_NOMATCH: "deny"
+      EMQX_LOADED_PLUGINS: "emqx_recon,emqx_retainer,emqx_management,emqx_dashboard,emqx_auth_mnesia"
+    volumes:
+      - ./volumes/emqx/data:/opt/emqx/data
+      - ./volumes/emqx/log:/opt/emqx/log
