@@ -790,8 +790,9 @@ while [ $do_loop = 1 ] ; do
 		;;
 
 	"hassio")
-		echo "Installing Home Asssistant
-		HASSIO_DIR=./hassio
+		echo "Installing Home Assistant on docker"
+		[ -f ./.params_menu ] && . ./.params_menu
+		mkdir -p $HASSIO_DIR
                 docker run -d \
                      --name homeassistant \
                      --privileged \
@@ -799,12 +800,7 @@ while [ $do_loop = 1 ] ; do
                      -v $HASSIO_DIR:/config \
                      --network=host \
                      ghcr.io/home-assistant/home-assistant:stable
-			mkdir -p $HASSIO_DIR
-			press_enter
-		else
-			echo "no selection"
-			exit
-		fi
+	   	press_enter
 		;;
 	"update")
 		clear
