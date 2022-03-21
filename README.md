@@ -3,6 +3,12 @@ IOTstack is a builder for docker-compose to easily make and maintain IoT stacks 
 
 ## UPDATES
 
+19/02/2022
+----------
+- Update mosquitto install
+- Update Home Assistant install
+- ADD EMQX install
+
 14/10/2021
 ----------
 - Updates Nginx-Proxy install
