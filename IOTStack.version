@@ -1,3 +1,9 @@
+Version - 20220219
+Update Home Assistant without supervisor !!!!!
+Update mosquitto
+Added EMQTT broker
+Preversion of Meshcentral
+
 Version - 20211014
 Update Home Assistant Installation
 Update NgNix-Proxy Installation
@@ -7,7 +13,7 @@ Update MeshCentral Installation ( Beta )
 Version - 20210520
 Resolve problem with Nextcloud
 Resolve problem with NgnixProxy
-Added meshCentral
+Added meshCentral preview
 
 Varsion - 20210205
 
